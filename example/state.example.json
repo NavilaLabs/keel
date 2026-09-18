@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "ticket_id": "PROJ-1234",
+  "ticket_source": "jira",
+  "code_repo": "myproject",
+  "pr": { "host": "bitbucket", "state": "none" },
+  "phase": "blocks",
+  "as_is_base_commit": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0",
+  "to_be_branch": "PROJ-1234",
+  "artifacts": {
+    "knowledge": "tickets/PROJ-1234/knowledge.md",
+    "adrs": ["tickets/PROJ-1234/adr/0001-inline-validation.md"],
+    "c4_views": ["api-components"]
+  },
+  "blocks": [
+    {
+      "id": "block-1",
+      "title": "Order validation",
+      "step": "8",
+      "status": "in_progress",
+      "claimed_components": ["api.orderService", "api.orderValidator"],
+      "claimed_stubs": [
+        {
+          "path": "src/order/service.rs",
+          "symbol": "OrderService",
+          "fingerprint": "3b1f9c0e7a2d4c5b6e8f0a1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e",
+          "shared_file": false
+        }
+      ],
+      "adrs": ["tickets/PROJ-1234/adr/0001-inline-validation.md"]
+    }
+  ],
+  "consultations": [
+    {
+      "id": "c-001",
+      "block": "block-1",
+      "step": "7",
+      "question": "Validate inline in OrderService, or as a separate OrderValidator?",
+      "options": ["inline", "separate validator"],
+      "answer": "separate validator",
+      "status": "answered",
+      "asked_at": "2026-09-16T09:12:00Z",
+      "answered_at": "2026-09-16T09:31:00Z"
+    }
+  ],
+  "jump_log": []
+}

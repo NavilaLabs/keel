@@ -1,0 +1,7 @@
+{
+  "name": "keel",
+  "version": "0.1.0",
+  "description": "Lay the keel before you build the hull. Runs a ticket from context gathering through an architecture consultation in LikeC4 to code written strictly against frozen contracts - with hooks that enforce what conventions cannot.",
+  "license": "MIT",
+  "keywords": ["workflow", "architecture", "likec4", "adr", "contracts", "jira", "github"]
+}

@@ -1,0 +1,13 @@
+{
+  "name": "keel-marketplace",
+  "owner": {
+    "name": "NavilaLabs"
+  },
+  "plugins": [
+    {
+      "name": "keel",
+      "source": "./",
+      "description": "Architecture before code, contracts before implementation - a ticket workflow with LikeC4, ADRs and enforcing hooks."
+    }
+  ]
+}

@@ -1,0 +1,192 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://navilalabs.dev/schema/ticket-state.schema.json",
+  "title": "Ticket workflow state",
+  "description": "Machine-readable state of one ticket's workflow run. Lives at tickets/<ticket-id>/state.json in the ticket repo. Written by the state-writer hook, read by the orchestrator to resume at the right step, and by the future UI as its backend.",
+  "type": "object",
+  "required": ["ticket_id", "phase", "blocks"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "default": 1
+    },
+    "ticket_id": {
+      "type": "string",
+      "description": "Issue key as used by the tracker, e.g. PROJ-1234 or gh-482."
+    },
+    "ticket_source": {
+      "enum": ["jira", "github"],
+      "description": "Which tracker this ticket lives in. Decides which MCP server the orchestrator talks to."
+    },
+    "code_repo": {
+      "type": "string",
+      "description": "Identifier of the code repository this ticket is implemented in."
+    },
+    "pr": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "host": { "enum": ["github", "bitbucket"] },
+        "url": { "type": "string" },
+        "number": { "type": ["integer", "string"] },
+        "state": { "enum": ["none", "open", "merged", "closed"] }
+      }
+    },
+    "phase": {
+      "enum": ["intake", "blocks", "delivery", "done"],
+      "description": "Coarse zone. intake = steps 1-5, blocks = steps 6-9 per block, delivery = steps 10-12."
+    },
+    "intake_step": {
+      "type": "string",
+      "description": "Current step inside the intake zone, e.g. \"3\". Only meaningful while phase is intake.",
+      "pattern": "^[1-5](\\.[0-9]+)*$"
+    },
+    "as_is_base_commit": {
+      "type": "string",
+      "description": "Commit of the ticket repo's main branch that the to-be branch was created from. The as-is-staleness hook compares this against current main to decide whether step 7.0 is required."
+    },
+    "to_be_branch": {
+      "type": "string",
+      "description": "Branch in the ticket repo holding the to-be architecture for this ticket."
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "knowledge": {
+          "type": "string",
+          "description": "Path to knowledge.md in the ticket repo."
+        },
+        "adrs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Paths to ADR files in the ticket repo."
+        },
+        "c4_views": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "LikeC4 view ids relevant to this ticket. Used by the PR description and by the UI's diagram pane."
+        }
+      }
+    },
+    "blocks": {
+      "type": "array",
+      "description": "Independently plannable themes the ticket was split into in step 4.",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "step", "status"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "step": {
+            "type": "string",
+            "description": "Current step inside this block.",
+            "pattern": "^[6-9](\\.[0-9]+)*$"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "in_progress",
+              "awaiting_consultation",
+              "blocked",
+              "done"
+            ]
+          },
+          "claimed_components": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "LikeC4 element ids this block modifies. The block-overlap hook rejects a claim already held by another block: overlapping claims mean the blocks were never independent (jump 7 -> 4)."
+          },
+          "claimed_stubs": {
+            "type": "array",
+            "description": "Contracts frozen in step 7.2. The stub-lock hook blocks edits to these during steps 8 and 9.",
+            "items": {
+              "type": "object",
+              "required": ["path"],
+              "additionalProperties": false,
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Path in the code repo holding the contract declaration (trait, interface, abstract class)."
+                },
+                "symbol": {
+                  "type": "string",
+                  "description": "Name of the declared contract, e.g. OrderService."
+                },
+                "fingerprint": {
+                  "type": "string",
+                  "description": "sha256 of the declaration file's content as frozen in 7.2."
+                },
+                "shared_file": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "True when contract and implementation live in the same file, so the whole file cannot be locked. The hook then warns instead of blocking; see the stub-lock hook."
+                }
+              }
+            }
+          },
+          "adrs": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "consultations": {
+      "type": "array",
+      "description": "Every consultation point, open or answered. Addressable objects rather than terminal text, so the UI can render them and they double as an audit log.",
+      "items": {
+        "type": "object",
+        "required": ["id", "step", "status", "asked_at"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "block": {
+            "type": ["string", "null"],
+            "description": "Block id, or null for ticket-wide consultations in the intake and delivery zones."
+          },
+          "step": { "type": "string" },
+          "question": { "type": "string" },
+          "options": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "answer": { "type": ["string", "null"] },
+          "status": { "enum": ["open", "answered", "skipped"] },
+          "asked_at": { "type": "string", "format": "date-time" },
+          "answered_at": { "type": ["string", "null"], "format": "date-time" }
+        }
+      }
+    },
+    "jump_log": {
+      "type": "array",
+      "description": "Every jump back to an earlier step, including the ones triggered by PR feedback. Mirrored into knowledge.md as prose.",
+      "items": {
+        "type": "object",
+        "required": ["from", "to", "trigger", "at"],
+        "additionalProperties": false,
+        "properties": {
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "block": { "type": ["string", "null"] },
+          "trigger": {
+            "enum": [
+              "design_flaw",
+              "contract_change",
+              "misunderstood_goal",
+              "missing_context",
+              "block_overlap",
+              "implementation_bug",
+              "pr_feedback",
+              "as_is_drift"
+            ]
+          },
+          "reason": { "type": "string" },
+          "at": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}
