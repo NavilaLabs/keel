@@ -6,6 +6,10 @@ description: Syncs the as-is LikeC4 model after a ticket's pull request has been
 
 Step 12 of the ticket workflow. `$ARGUMENTS` is the ticket id.
 
+This is scoped to one ticket: it asks whether this ticket did what step 7
+said it would. For the whole model - a first import, or a re-derivation
+after drift - use `/keel:resync` instead.
+
 This never runs automatically. Parallel branches touching the same components
 would overwrite each other, and a ticket that took weeks may have been
 overtaken by work that landed on `main` meanwhile. The merge into `main` is a

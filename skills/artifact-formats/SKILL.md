@@ -87,6 +87,31 @@ that only justifies the winner is a press release.
 Only write an ADR when there were several real options. If one approach was
 obvious, the decision is not worth a document - see `decision-heuristics`.
 
+## .keel-sync.json
+
+`architecture/.keel-sync.json`, written by `/keel:resync`. Records what the
+as-is model was last derived from, so staleness can be stated in commits
+rather than guessed at.
+
+```json
+{
+  "schema_version": 1,
+  "synced_at": "2026-09-18T21:00:00Z",
+  "code_commit": "<code repo HEAD at extraction time>",
+  "scope": ["context", "container-api"],
+  "component_level": ["container-api"],
+  "tool": "graphify",
+  "unresolved": ["api.legacyBridge -> target could not be resolved"]
+}
+```
+
+`scope` is what the model covers, `component_level` the subset modelled below
+container level. Both matter on the next re-derivation: it re-derives what is
+already covered rather than silently expanding.
+
+`unresolved` carries what the extractor could not work out. Keeping it means
+the next run does not re-litigate the same ambiguities from scratch.
+
 ## state.json
 
 Conforms to `schema/state.schema.json`. Machine-readable, written by the

@@ -96,6 +96,7 @@ ticket-repo-myproject/
     specification.c4
     container-*.c4
     views.c4
+    .keel-sync.json      # what the model was last derived from
   tickets/PROJ-1234/
     knowledge.md         # goals, problems, open questions, jump log
     state.json           # machine-readable workflow state
@@ -105,6 +106,61 @@ ticket-repo-myproject/
 
 `example/state.example.json` shows a filled-in state file; `state.schema.json`
 is the schema it conforms to. `example/keel.json` is the project config.
+
+## Adopting keel in an existing project
+
+An existing codebase has an architecture already — it just is not written
+down. Deriving it is the first thing to do, before any ticket:
+
+```
+/keel:resync
+```
+
+With an empty `architecture/` this runs as a first import: it offers to
+scaffold the ticket repo, identifies the containers and how it identified
+each one, and asks you to confirm before writing anything.
+
+It models **context and containers only** by default, and that is on purpose.
+A first import that dumps every class into the model produces a diagram nobody
+maintains and everybody stops trusting after the third stale view. Components
+earn their place one ticket at a time, added at step 7.1 by the ticket that
+actually touches them. You can ask for component level on a named container if
+you want it up front.
+
+### Re-deriving later
+
+The as-is model drifts: hotfixes, other people's commits, work that happened
+outside keel. The same command re-derives it.
+
+```
+/keel:resync                  # everything already modelled
+/keel:resync container-api    # just that container
+```
+
+It re-derives what is already covered rather than expanding on its own, works
+one container at a time so the diff stays reviewable, and splits the
+differences into *model stale*, *model ahead* and *possible boundary
+violation*. The third kind is the reason this is a consultation and not a
+script: updating the model there would record the erosion as the new normal,
+so it offers the other option too — leave the model, open a ticket, fix the
+code.
+
+`architecture/.keel-sync.json` records what the model was last derived from,
+so the next run can tell you how stale it is in commits rather than in
+adjectives.
+
+**Tickets in flight during a resync go stale on purpose.** Their
+`as_is_base_commit` no longer matches `main`, so the `as_is_staleness` hook
+fires and forces step 7.0 on each of them — which is exactly the check those
+tickets need once the ground under them has moved. keel names them before
+committing rather than quietly patching their baseline.
+
+### Which sync command
+
+| | |
+| --- | --- |
+| `/keel:resync [container]` | The whole model, independent of any ticket. First import, or drift |
+| `/keel:sync-architecture <id>` | Step 12. Did *this* ticket do what step 7 said |
 
 ## MCP servers
 
@@ -127,7 +183,8 @@ for a live-reloading preview, or use the LikeC4 VS Code extension.
 
 ```
 /keel:ticket PROJ-1234              # start, or resume exactly where it stopped
-/keel:sync-architecture PROJ-1234   # after the PR is merged
+/keel:sync-architecture PROJ-1234   # step 12, after the PR is merged
+/keel:resync [container]            # first import, or re-derive after drift
 /keel:statusline                    # turn the status line on (or: off)
 ```
 
@@ -182,7 +239,8 @@ real jump. A name or a comment changes → just fix it.
 ## What is in here
 
 **Commands** — `/keel:ticket` orchestrates; `/keel:sync-architecture` is step
-12; `/keel:statusline` toggles the status line.
+12; `/keel:resync` derives the as-is model from the code, for a first import
+or after drift; `/keel:statusline` toggles the status line.
 
 **Subagents** — `context-gatherer` (1), `research-agent` (6.3),
 `review-triage` (11.1), `as-is-extractor` (12.1). Each keeps bulk material out
