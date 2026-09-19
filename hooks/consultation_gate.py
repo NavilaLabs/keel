@@ -23,26 +23,26 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 
 from workflow_state import (
+    WORKFLOW_FILES,
     block,
+    is_workflow_path,
     load_state,
     open_consultations,
-    is_inside_project,
     read_event,
     state_path,
     written_path,
 )
 
 HOOK = "consultation-gate"
-EXEMPT_NAMES = {"state.json", "knowledge.md"}
 
 
 def main() -> None:
     event = read_event()
     target = written_path(event)
-    if not target or not is_inside_project(target):
+    if not target or not is_workflow_path(target):
         sys.exit(0)
 
-    if Path(target).name in EXEMPT_NAMES:
+    if Path(target).name in WORKFLOW_FILES:
         sys.exit(0)
 
     state = load_state(HOOK)

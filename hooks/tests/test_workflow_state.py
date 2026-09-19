@@ -1,10 +1,19 @@
+import json
+import os
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from workflow_state import blocks_in_implementation, describe_services, is_inside_project
+from workflow_state import (
+    blocks_in_implementation,
+    configured_ticket_repo,
+    describe_services,
+    is_workflow_path,
+)
 
 
 def state_with(*blocks: dict) -> dict:
@@ -63,13 +72,57 @@ class DescribeServicesTest(unittest.TestCase):
     def test_reports_nothing_without_configuration(self):
         self.assertEqual([], describe_services({}, {}))
 
+    def test_reports_a_service_that_is_not_an_object(self):
+        lines = describe_services({"tickets": "github"}, {})
+        self.assertEqual("Tickets: configured as 'github', which is not an object.", lines[0])
 
-class IsInsideProjectTest(unittest.TestCase):
-    def test_current_directory_content_is_inside(self):
-        self.assertTrue(is_inside_project("some/new/file.txt"))
 
-    def test_parent_directory_is_outside(self):
-        self.assertFalse(is_inside_project(".."))
+class TicketRepoPathTest(unittest.TestCase):
+    def test_expands_a_leading_tilde(self):
+        with mock.patch.dict(os.environ, {"KEEL_TICKET_REPO": "~/tickets"}):
+            self.assertEqual(Path.home() / "tickets", configured_ticket_repo())
+
+    def test_is_none_without_configuration(self):
+        self.addCleanup(os.chdir, Path.cwd())
+        with mock.patch.dict(os.environ, {}, clear=True):
+            with tempfile.TemporaryDirectory() as empty:
+                os.chdir(empty)
+                self.assertIsNone(configured_ticket_repo())
+
+
+class IsWorkflowPathTest(unittest.TestCase):
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        root = Path(self.directory.name)
+        self.code_repo = root / "code"
+        self.ticket_repo = root / "tickets"
+        self.code_repo.mkdir()
+        self.ticket_repo.mkdir()
+        (self.code_repo / ".claude").mkdir()
+        (self.code_repo / ".claude" / "keel.json").write_text(
+            json.dumps({"ticket_repo": str(self.ticket_repo)})
+        )
+        self.addCleanup(os.chdir, Path.cwd())
+        os.chdir(self.code_repo)
+
+    def test_code_repo_file_belongs_to_the_workflow(self):
+        with mock.patch.dict(os.environ, {}, clear=True):
+            self.assertTrue(is_workflow_path("src/main.py"))
+
+    def test_ticket_repo_file_belongs_to_the_workflow(self):
+        with mock.patch.dict(os.environ, {}, clear=True):
+            model = self.ticket_repo / "architecture" / "container-api.c4"
+            self.assertTrue(is_workflow_path(str(model)))
+
+    def test_file_outside_both_repositories_does_not(self):
+        with mock.patch.dict(os.environ, {}, clear=True):
+            self.assertFalse(is_workflow_path(str(Path(self.directory.name) / "elsewhere.md")))
+
+    def test_file_outside_both_when_no_ticket_repo_is_configured(self):
+        with mock.patch.dict(os.environ, {}, clear=True):
+            (self.code_repo / ".claude" / "keel.json").write_text("{}")
+            self.assertFalse(is_workflow_path(str(self.ticket_repo / "notes.md")))
 
 
 if __name__ == "__main__":

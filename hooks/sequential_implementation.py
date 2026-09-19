@@ -20,9 +20,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 
 from workflow_state import (
+    WORKFLOW_FILES,
     block,
     blocks_in_implementation,
-    is_inside_project,
+    is_workflow_path,
     load_state,
     read_event,
     written_path,
@@ -34,7 +35,10 @@ HOOK = "sequential-implementation"
 def main() -> None:
     event = read_event()
     target = written_path(event)
-    if not target or not is_inside_project(target):
+    if not target or not is_workflow_path(target):
+        sys.exit(0)
+
+    if Path(target).name in WORKFLOW_FILES:
         sys.exit(0)
 
     state = load_state(HOOK)

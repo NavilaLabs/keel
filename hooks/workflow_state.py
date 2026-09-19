@@ -52,6 +52,10 @@ IMPLEMENTATION_STEPS = ("8", "9")
 CONFIG_FILE = Path(".claude/keel.json")
 TICKET_MARKER = Path(".keel-ticket")
 
+# Recording where the workflow stands is never the work a hook holds back.
+# Blocking these would leave no way to write down the answer that unblocks it.
+WORKFLOW_FILES = {"state.json", "knowledge.md"}
+
 
 def fail_open(hook: str, message: str) -> None:
     print(f"{hook}: {message}", file=sys.stderr)
@@ -79,15 +83,20 @@ def _config() -> dict:
     return {}
 
 
-def ticket_repo(hook: str) -> Path:
+def configured_ticket_repo() -> Path | None:
     repo = os.environ.get("KEEL_TICKET_REPO") or _config().get("ticket_repo")
-    if not repo:
+    # A path written by hand, so it may start with ~.
+    return Path(repo).expanduser() if repo else None
+
+
+def ticket_repo(hook: str) -> Path:
+    path = configured_ticket_repo()
+    if not path:
         fail_open(
             hook,
             f"no ticket repo configured - set KEEL_TICKET_REPO or ticket_repo in "
             f"{CONFIG_FILE}. Skipping check",
         )
-    path = Path(repo)
     if not path.is_dir():
         fail_open(hook, f"ticket repo {path} is not a directory, skipping check")
     return path
@@ -137,16 +146,31 @@ def written_content(event: dict) -> str | None:
     return tool_input.get("content") or tool_input.get("new_string")
 
 
-def is_inside_project(path: str) -> bool:
-    """Workflow hooks guard the code repo. Files elsewhere are none of their business."""
+def is_workflow_path(path: str) -> bool:
+    """The ticket's own two repositories. A file outside both is none of a hook's business."""
     try:
-        return Path(path).resolve().is_relative_to(Path.cwd().resolve())
+        resolved = Path(path).resolve()
     except OSError:
         return True
+
+    roots = [Path.cwd()]
+    ticket_repo = configured_ticket_repo()
+    if ticket_repo:
+        roots.append(ticket_repo)
+
+    for root in roots:
+        try:
+            if resolved.is_relative_to(root.resolve()):
+                return True
+        except OSError:
+            continue
+    return False
 
 
 def describe_service(label: str, service: dict, kind_key: str, environ: dict) -> str:
     """One line for the session banner. Never contains the token itself."""
+    if not isinstance(service, dict):
+        return f"{label}: configured as {service!r}, which is not an object."
     kind = service.get(kind_key, "(kind not configured)")
     repository = service.get("repository")
     where = f"{kind}, {repository}" if repository else kind

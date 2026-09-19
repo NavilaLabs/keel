@@ -48,35 +48,47 @@ class HookRunner:
 
 
 class SequentialImplementationTest(unittest.TestCase):
+    HOOK = "sequential_implementation.py"
+
     def setUp(self):
         self.runner = HookRunner({"blocks": TWO_BLOCKS_IMPLEMENTING})
         self.addCleanup(self.runner.cleanup)
 
-    def test_blocks_a_write_inside_the_code_repo(self):
+    def test_blocks_a_write_in_the_code_repo(self):
         written = self.runner.code_repo / "src" / "main.py"
-        self.assertEqual(2, self.runner.run("sequential_implementation.py", written))
+        self.assertEqual(2, self.runner.run(self.HOOK, written))
 
-    def test_allows_a_write_outside_the_code_repo(self):
-        written = self.runner.ticket_repo / "notes.md"
-        self.assertEqual(0, self.runner.run("sequential_implementation.py", written))
+    def test_allows_the_state_file_that_resolves_the_situation(self):
+        written = self.runner.ticket_repo / "tickets" / "1" / "state.json"
+        self.assertEqual(0, self.runner.run(self.HOOK, written))
+
+    def test_allows_a_write_outside_both_repositories(self):
+        written = Path(self.runner.directory.name) / "elsewhere" / "settings.json"
+        self.assertEqual(0, self.runner.run(self.HOOK, written))
 
 
 class ConsultationGateTest(unittest.TestCase):
+    HOOK = "consultation_gate.py"
+
     def setUp(self):
         self.runner = HookRunner({"blocks": [], "consultations": OPEN_CONSULTATION})
         self.addCleanup(self.runner.cleanup)
 
-    def test_blocks_a_write_inside_the_code_repo(self):
+    def test_blocks_a_write_in_the_code_repo(self):
         written = self.runner.code_repo / "src" / "main.py"
-        self.assertEqual(2, self.runner.run("consultation_gate.py", written))
+        self.assertEqual(2, self.runner.run(self.HOOK, written))
 
-    def test_allows_a_write_outside_the_code_repo(self):
-        written = self.runner.ticket_repo / "notes.md"
-        self.assertEqual(0, self.runner.run("consultation_gate.py", written))
+    def test_blocks_the_architecture_model_in_the_ticket_repo(self):
+        written = self.runner.ticket_repo / "architecture" / "container-api.c4"
+        self.assertEqual(2, self.runner.run(self.HOOK, written))
 
-    def test_allows_writing_knowledge_inside_the_code_repo(self):
-        written = self.runner.code_repo / "knowledge.md"
-        self.assertEqual(0, self.runner.run("consultation_gate.py", written))
+    def test_allows_the_knowledge_file_that_may_hold_the_answer(self):
+        written = self.runner.ticket_repo / "tickets" / "1" / "knowledge.md"
+        self.assertEqual(0, self.runner.run(self.HOOK, written))
+
+    def test_allows_a_write_outside_both_repositories(self):
+        written = Path(self.runner.directory.name) / "elsewhere" / "settings.json"
+        self.assertEqual(0, self.runner.run(self.HOOK, written))
 
 
 if __name__ == "__main__":
