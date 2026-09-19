@@ -119,12 +119,16 @@ def written_content(event: dict) -> str | None:
     return tool_input.get("content") or tool_input.get("new_string")
 
 
+def is_implementing(block: dict) -> bool:
+    """A finished block keeps its last step (9) but no longer implements."""
+    return (
+        str(block.get("step", "")).startswith(IMPLEMENTATION_STEPS)
+        and block.get("status") != "done"
+    )
+
+
 def blocks_in_implementation(state: dict) -> list[dict]:
-    return [
-        b
-        for b in state.get("blocks", [])
-        if str(b.get("step", "")).startswith(IMPLEMENTATION_STEPS)
-    ]
+    return [b for b in state.get("blocks", []) if is_implementing(b)]
 
 
 def open_consultations(state: dict) -> list[dict]:
