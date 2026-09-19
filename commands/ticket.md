@@ -19,6 +19,18 @@ You drive one ticket through a fixed workflow. You do not skip steps, and you do
    - **Present** -> resume. `phase` plus `intake_step` or the blocks' `step` fields tell you exactly where work stopped. Report that position to the developer in one line before continuing.
 2. Never re-run a completed step to "refresh context". If you lack context, read the artifacts: `knowledge.md`, the ADRs, the LikeC4 model.
 
+## Trackers and authentication
+
+`.claude/keel.json` records once per project where tickets and pull requests live (`tickets.source`, `pull_requests.host`, each with `repository`) and the name of the environment variable holding its token (`token_env`). Read it before step 1 and use it for `ticket_source` and `pr.host` in `state.json`.
+
+- **Missing** -> ask the developer once which tracker and pull request host the project uses and which variable holds the token, then write the answer to `.claude/keel.json`. Never ask again in later tickets.
+- **Access** -> use the tracker's MCP server if one is available. Otherwise call its REST API with the token from `token_env`, passed only in the request header. Never print, log, echo or store the token, and never write its value into any file.
+- **Unset variable** -> say which variable is missing and stop asking for anything else. The developer sets it.
+
+## Hooks
+
+A hook block is a decision, not an obstacle. Never work around a blocked write with Bash, sed, python or any other tool, and never edit the hooks or the state to get past one. Say what was blocked and why you think it is wrong or how you would proceed, and wait. Only the developer can allow a workaround.
+
 ## Zones
 
 | Zone | Steps | Rule |
@@ -60,7 +72,7 @@ Per block. Blocks may sit at different steps.
 **7. Fix architecture and design**
 - 7.0 if this block has been open a while or reuses an existing to-be branch: compare `as_is_base_commit` against the ticket repo's current `main`. On drift, rebase the to-be branch and -> consult
 - 7.1 update the LikeC4 model on the to-be branch. Declare the touched elements as this block's `claimed_components`. Overlap with another block means the blocks were never independent -> jump to 4
-- 7.2 create empty stubs in the code repo: signatures only, no implementation. Put the contract - error behaviour, idempotency, invariants - in doc comments, not in the diagram. Record each in `claimed_stubs` with its fingerprint
+- 7.2 make sure the code repo is on a ticket branch cut from a fetched, current `origin/main` (a stale local `main` silently drops merged work), then create empty stubs in the code repo: signatures only, no implementation. Put the contract - error behaviour, idempotency, invariants - in doc comments, not in the diagram. Record each in `claimed_stubs` with its fingerprint
 - 7.3 write an ADR if a non-trivial decision was made between several real options from step 6
 -> consult. This is the critical one: everything after it is implemented strictly against these stubs.
 

@@ -10,12 +10,13 @@ It never blocks. A session that starts while keel is misconfigured is a
 session that works normally without keel, not a session that refuses to start.
 """
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from workflow_state import CONFIG_FILE, TICKET_MARKER, _config
+from workflow_state import CONFIG_FILE, TICKET_MARKER, _config, describe_services
 
 BANNER = "keel is active in this repository."
 
@@ -45,6 +46,15 @@ def main() -> None:
     ticket = ticket or config.get("ticket_id")
 
     lines = [BANNER, "", f"Ticket repo: {repo}", ""]
+
+    services = describe_services(config, os.environ)
+    if services:
+        lines += services
+        lines += [
+            "Use the tracker's MCP server if one is available, otherwise its REST "
+            "API with the token from that variable. Never print, log or store the token.",
+            "",
+        ]
 
     if ticket:
         lines += [

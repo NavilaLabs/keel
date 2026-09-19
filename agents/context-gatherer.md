@@ -53,3 +53,7 @@ runs.
 
 Do not propose solutions. Step 6 collects those, and proposing them here
 would anchor the developer before the problem is even agreed on.
+
+## Tracker access
+
+Read `.claude/keel.json` in the code repo for `tickets` and `pull_requests`: where they live and which environment variable holds the token (`token_env`). Use the tracker's MCP server if one is available, otherwise its REST API with `curl`, passing the token only in an Authorization header. Never print, echo or store the token. If the variable is unset, report that instead of guessing.

@@ -63,7 +63,7 @@ removes it again.
 
 ## Set up a project
 
-Two things per code repo.
+Three things per code repo.
 
 **1. Point keel at the ticket repo.** Create `.claude/keel.json` in the code
 repo:
@@ -76,7 +76,32 @@ repo:
 
 (`KEEL_TICKET_REPO` in the environment works too and takes precedence.)
 
-**2. Tell it which ticket is active.** The hooks run outside the conversation
+**2. Tell keel where tickets and pull requests live, and how to log in.** Add
+this once per project so it stops asking:
+
+```json
+{
+  "ticket_repo": "../ticket-repo-myproject",
+  "tickets": {
+    "source": "github",
+    "repository": "NavilaLabs/myproject",
+    "token_env": "GITHUB_PERSONAL_ACCESS_TOKEN"
+  },
+  "pull_requests": {
+    "host": "github",
+    "repository": "NavilaLabs/myproject",
+    "token_env": "GITHUB_PERSONAL_ACCESS_TOKEN"
+  }
+}
+```
+
+`source` is `github` or `jira`, `host` is `github` or `bitbucket`. Tickets and
+pull requests can live in different places. `token_env` is the name of an
+environment variable, never the token itself. Keel uses the tracker's MCP
+server when there is one and falls back to the REST API with that token. The
+session start report says whether the variable is set.
+
+**3. Tell it which ticket is active.** The hooks run outside the conversation
 and cannot see what you are working on, so the id goes in `.keel-ticket` in
 the code repo root — add that to `.gitignore`. `/keel:ticket` writes it for
 you. `KEEL_TICKET_ID` in the environment also works.
@@ -84,6 +109,10 @@ you. `KEEL_TICKET_ID` in the environment also works.
 Without either, the hooks fail open: they warn once and let Claude continue.
 That is deliberate — a hook that halts development when it is itself
 misconfigured gets disabled within two days, and then it protects nothing.
+
+The hooks cover writes made with the editor tools (Edit, Write). A shell
+command such as `sed` or a heredoc is not intercepted, so the orchestrator
+rule is the backstop: it must ask before working around a block.
 
 ## Set up the ticket repo
 

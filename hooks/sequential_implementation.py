@@ -19,14 +19,22 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 
-from workflow_state import block, blocks_in_implementation, load_state, read_event, written_path
+from workflow_state import (
+    block,
+    blocks_in_implementation,
+    is_inside_project,
+    load_state,
+    read_event,
+    written_path,
+)
 
 HOOK = "sequential-implementation"
 
 
 def main() -> None:
     event = read_event()
-    if not written_path(event):
+    target = written_path(event)
+    if not target or not is_inside_project(target):
         sys.exit(0)
 
     state = load_state(HOOK)
@@ -41,9 +49,9 @@ def main() -> None:
     )
     block(
         f"Blocked: {len(active)} blocks are in implementation at once:\n{listed}\n\n"
-        f"Steps 8 and 9 run one block at a time. Pick one to finish, set the "
-        f"others back to step 7 with status pending in state.json, and continue "
-        f"with the one you chose."
+        f"Steps 8 and 9 run one block at a time. Pick the block to work on and "
+        f"set every other unfinished block back to step 7 with status pending "
+        f"in state.json. A finished block has status done and does not count."
     )
 
 

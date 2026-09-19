@@ -23,6 +23,24 @@ variables taking precedence:
 
 ticket_id is usually left out of that file and kept in .keel-ticket instead,
 since it changes per ticket while ticket_repo does not.
+
+The same file records, once per project, where tickets and pull requests live
+and which environment variable holds the token for each:
+
+    {
+      "tickets": {
+        "source": "github",
+        "repository": "NavilaLabs/keel-web",
+        "token_env": "GITHUB_PERSONAL_ACCESS_TOKEN"
+      },
+      "pull_requests": {
+        "host": "github",
+        "repository": "NavilaLabs/keel-web",
+        "token_env": "GITHUB_PERSONAL_ACCESS_TOKEN"
+      }
+    }
+
+Only the name of the variable is stored, never the token.
 """
 
 import json
@@ -117,6 +135,37 @@ def written_content(event: dict) -> str | None:
     """
     tool_input = event.get("tool_input", {})
     return tool_input.get("content") or tool_input.get("new_string")
+
+
+def is_inside_project(path: str) -> bool:
+    """Workflow hooks guard the code repo. Files elsewhere are none of their business."""
+    try:
+        return Path(path).resolve().is_relative_to(Path.cwd().resolve())
+    except OSError:
+        return True
+
+
+def describe_service(label: str, service: dict, kind_key: str, environ: dict) -> str:
+    """One line for the session banner. Never contains the token itself."""
+    kind = service.get(kind_key, "(kind not configured)")
+    repository = service.get("repository")
+    where = f"{kind}, {repository}" if repository else kind
+    token_env = service.get("token_env")
+    if not token_env:
+        return f"{label}: {where}. No token variable configured."
+    state = "set" if environ.get(token_env) else "NOT set in this environment"
+    return f"{label}: {where}. Token in ${token_env} ({state})."
+
+
+def describe_services(config: dict, environ: dict) -> list[str]:
+    lines = []
+    if "tickets" in config:
+        lines.append(describe_service("Tickets", config["tickets"], "source", environ))
+    if "pull_requests" in config:
+        lines.append(
+            describe_service("Pull requests", config["pull_requests"], "host", environ)
+        )
+    return lines
 
 
 def is_implementing(block: dict) -> bool:

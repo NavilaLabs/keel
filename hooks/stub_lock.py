@@ -73,10 +73,12 @@ def main() -> None:
             block(
                 f"Blocked: {symbol} in {stub.get('path')} is a contract frozen in "
                 f"step 7.2, and block '{blk.get('id')}' is in step {step}.\n"
-                f"Changing a signature here is not an implementation detail - it is "
-                f"a jump back to step 7, which requires consulting the developer.\n"
+                f"Changing a signature or a guarantee here is a jump back to step 7, "
+                f"which requires consulting the developer.\n"
                 f"Stop, state what the contract needs to become and why, and wait "
-                f"for a decision before editing this file."
+                f"for the decision. After the answer, set the block to step 7.2 in "
+                f"state.json, edit this file, update the stub's fingerprint and only "
+                f"then return the block to step 8."
             )
 
     sys.exit(0)

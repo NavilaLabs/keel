@@ -26,6 +26,7 @@ from workflow_state import (
     block,
     load_state,
     open_consultations,
+    is_inside_project,
     read_event,
     state_path,
     written_path,
@@ -38,7 +39,7 @@ EXEMPT_NAMES = {"state.json", "knowledge.md"}
 def main() -> None:
     event = read_event()
     target = written_path(event)
-    if not target:
+    if not target or not is_inside_project(target):
         sys.exit(0)
 
     if Path(target).name in EXEMPT_NAMES:

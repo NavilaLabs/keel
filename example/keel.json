@@ -1,3 +1,13 @@
 {
-  "ticket_repo": "../ticket-repo-myproject"
+  "ticket_repo": "../ticket-repo-myproject",
+  "tickets": {
+    "source": "github",
+    "repository": "NavilaLabs/myproject",
+    "token_env": "GITHUB_PERSONAL_ACCESS_TOKEN"
+  },
+  "pull_requests": {
+    "host": "github",
+    "repository": "NavilaLabs/myproject",
+    "token_env": "GITHUB_PERSONAL_ACCESS_TOKEN"
+  }
 }
