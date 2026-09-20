@@ -31,8 +31,9 @@ class HookRunner:
         (self.code_repo / ".keel-ticket").write_text("1")
         (self.ticket_repo / "tickets" / "1" / "state.json").write_text(json.dumps(state))
 
-    def run(self, hook: str, written_file: Path) -> int:
-        event = {"tool_input": {"file_path": str(written_file)}}
+    def run(self, hook: str, written_file: Path | None = None) -> int:
+        """A written file names itself; Bash and Stop events name nothing."""
+        event = {"tool_input": {"file_path": str(written_file)}} if written_file else {}
         result = subprocess.run(
             [sys.executable, str(HOOKS / hook)],
             input=json.dumps(event),
@@ -41,6 +42,7 @@ class HookRunner:
             cwd=self.code_repo,
             env={name: value for name, value in os.environ.items() if not name.startswith("KEEL_")},
         )
+        self.result = result
         return result.returncode
 
     def cleanup(self):

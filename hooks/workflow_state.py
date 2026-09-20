@@ -102,12 +102,17 @@ def ticket_repo(hook: str) -> Path:
     return path
 
 
-def ticket_id(hook: str) -> str:
+def configured_ticket_id() -> str | None:
     tid = os.environ.get("KEEL_TICKET_ID")
     if not tid and TICKET_MARKER.is_file():
         tid = TICKET_MARKER.read_text(encoding="utf-8").strip()
     if not tid:
         tid = _config().get("ticket_id")
+    return tid or None
+
+
+def ticket_id(hook: str) -> str:
+    tid = configured_ticket_id()
     if not tid:
         fail_open(
             hook,
@@ -119,6 +124,22 @@ def ticket_id(hook: str) -> str:
 
 def state_path(hook: str) -> Path:
     return ticket_repo(hook) / "tickets" / ticket_id(hook) / "state.json"
+
+
+def find_state_path() -> Path | None:
+    """The state file, or None when this session has no ticket to observe.
+
+    The quiet counterpart to state_path, for the triggers that carry no
+    written path and therefore cannot tell beforehand whether keel is
+    involved at all. A session without an active ticket is the normal case
+    there, and a warning on every shell command would be noise.
+    """
+    repo = configured_ticket_repo()
+    tid = configured_ticket_id()
+    if not repo or not tid:
+        return None
+    path = repo / "tickets" / tid / "state.json"
+    return path if path.is_file() else None
 
 
 def load_state(hook: str) -> dict:

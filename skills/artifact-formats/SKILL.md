@@ -117,7 +117,7 @@ the next run does not re-litigate the same ambiguities from scratch.
 Conforms to `schema/state.schema.json`. Machine-readable, written by the
 `state-writer` hook and the orchestrator, read on resume and by the UI.
 
-Two rules when writing it by hand:
+Three rules when writing it by hand:
 
 - **Never rewrite history.** `consultations[]` and `jump_log[]` are
   append-only. An answered consultation stays answered; a jump that happened
@@ -125,3 +125,8 @@ Two rules when writing it by hand:
 - **Status reflects reality, not intent.** A block sits at
   `awaiting_consultation` until the developer has actually answered, not
   from the moment the question was asked in the conversation.
+- **Record an artefact's path when the artefact is written**, in `artifacts`
+  or in the block's `claimed_stubs`, and not in some later write. The
+  `state-writer` hook derives the `artifact_hint` event from those paths, so
+  a consultation opened before its subject is recorded is a consultation a UI
+  cannot illustrate.

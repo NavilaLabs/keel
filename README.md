@@ -114,6 +114,12 @@ The hooks cover writes made with the editor tools (Edit, Write). A shell
 command such as `sed` or a heredoc is not intercepted, so the orchestrator
 rule is the backstop: it must ask before working around a block.
 
+`state_writer` is the exception, because it records rather than enforces. It
+also runs after a shell command and at the end of every turn, and each of
+those means the same thing to it: re-read `state.json` and compare it against
+its snapshot. A state file moved with a heredoc therefore produces the same
+events as one moved with Edit.
+
 ## Set up the ticket repo
 
 One per project, separate from the code. It holds everything that is not code,
@@ -290,7 +296,7 @@ regardless:
 | `as_is_staleness` | Step 7.0 when main moved under the branch |
 | `pr_gate` | No PR before blocks are done and artifacts are linked |
 | `block_overlap` | Overlapping component claims mean a jump back to 4 |
-| `state_writer` | Appends the event stream to `events.jsonl` |
+| `state_writer` | Appends the event stream to `events.jsonl`, hints included |
 | `session_start` | Announces keel and the active ticket to Claude |
 
 `stub_lock` is the one that matters. It locks the *file* declaring a contract
@@ -308,6 +314,47 @@ without touching the workflow: `state.json` for the current position,
 `events.jsonl` for the live stream and history, `consultations[]` as
 addressable objects renderable as cards, `artifacts.c4_views` for which
 diagram to show, `jump_log[]` for why things changed.
+
+### The artefact hint
+
+Six of the seven event types are facts about the workflow. The seventh,
+`artifact_hint`, is the one thing on the stream addressed to a listener: at
+the steps where an artefact is the subject, it names what is worth looking at
+right now, so a UI can bring that artefact to the front once.
+
+```json
+{"at": "2026-09-19T13:35:18.437026+00:00", "type": "artifact_hint",
+ "block": "b2", "step": "7", "consultation": "c7",
+ "targets": [{"kind": "c4_view", "view": "server", "branch": "ticket/2"},
+             {"kind": "stub", "repo": "code", "path": "server/src/logging/types.ts",
+              "symbol": "Logger"},
+             {"kind": "adr", "repo": "ticket",
+              "path": "tickets/2/adr/0004-pino-with-own-request-middleware.md"}]}
+```
+
+A hint is emitted when a consultation opens at step 5, 7, 7.1, 7.2 or 7.3,
+and when the state names an artefact for the first time. `targets` are
+ordered, the first is the primary, and each one is resolved: `repo` says
+which of the two repositories a `path` is relative to, and a `c4_view` names
+the view id together with the branch its model lives on. Nothing needs to be
+looked up in `state.json` to act on a hint.
+
+**It is fire and forget.** It is not state, nothing waits for it, and running
+keel in a terminal with nobody listening is the normal case, not a degraded
+one. Two rules follow from that, one on each side:
+
+- keel never emits a hint from a first observation. With no snapshot to
+  compare against, every artefact the state names would look new at the same
+  moment. The facts either side survive being re-derived; a burst of stale
+  hints would not.
+- A consumer acts only on hints appended after it attached. What it reads on
+  attach is history, and `at` is there for a freshness window of its own. A
+  hint arrives once and the developer overrides it immediately, which is the
+  point: state would keep pulling the view back.
+
+`events.jsonl` is append-only and nothing prunes it. It is bounded by one
+ticket: a finished ticket's stream is a few hundred lines, and a UI that
+replays it for history is exactly what pruning would break.
 
 ## License
 
