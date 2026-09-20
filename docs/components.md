@@ -1,77 +1,83 @@
-# Workflow-Komponenten: Agents, Hooks, Skills, State
-
-Arbeitsstand (deutsch). Bezeichner, Dateinamen und Feldnamen sind bereits englisch und werden so übernommen; die tatsächlichen Definitionsdateien werden komplett auf Englisch geschrieben.
+# Workflow components: agents, hooks, skills, state
 
 ---
 
 ## 1. Orchestrator
 
-**Slash-Command:** `/ticket <ticket-id>`
+**Slash command:** `/keel:ticket <ticket-id>`
 
-Kennt die Schrittreihenfolge, liest `state.json` und steigt **an der dort hinterlegten Stelle** ein – nicht bei Schritt 1. Ruft Agents, Skills und Artefakt-Schreibvorgänge an den passenden Stellen auf und respektiert die Zonen (Intake sequenziell, Blocks 6–7 parallel / 8–9 sequenziell, Delivery erst bei allen Blöcken `done`).
+It knows the order of the steps, reads `state.json` and re-enters **at the position recorded there**, not at step 1. It calls agents, skills and artifact writes at the right points and respects the zones (intake sequential, blocks 6 and 7 parallel, 8 and 9 sequential, delivery only once every block is `done`).
 
-Damit sind Wiedereinstieg (11.2), Merge-Sync (12) und "morgen weitermachen" ohne Chat-Kontext abgedeckt.
+That covers re-entry (11.2), the merge sync (12) and carrying on tomorrow without any chat context.
 
-Ergänzende Commands:
+The other commands:
 
-| Command | Zweck |
+| Command | Purpose |
 |---|---|
-| `/ticket <id>` | Starten oder fortsetzen |
-| `/sync-architecture <id>` | Schritt 12, manuell ausgelöst |
-| `/ticket-status <id>` | `state.json` lesbar ausgeben (Vorstufe der späteren UI) |
+| `/keel:ticket <id>` | Start or resume |
+| `/keel:sync-architecture <id>` | Step 12, triggered by hand |
+| `/keel:resync` | Derive the as-is model from the code, for a first import or after drift |
+| `/keel:statusline` | Toggle the status line, which shows the active ticket, the current step and whether a consultation is waiting |
 
 ---
 
 ## 2. Agents
 
-Subagents bekommen einen eigenen, isolierten Kontext. Kriterium: viel Rohmaterial rein, wenig Kondensat raus. Bewusst **kein** Agent für Schritt 7 und für Rücksprache-Punkte – dort soll alles im Hauptkontext liegen, wo der Entwickler es sieht.
+Subagents get their own isolated context. The criterion: a lot of raw material in, a little condensate out. Deliberately **no** agent for step 7 or for consultations, where everything belongs in the main context, in front of the developer.
 
-| Agent | Schritt | Input | Output |
+| Agent | Step | Input | Output |
 |---|---|---|---|
-| `context-gatherer` | 1 | Ticket + verwandte Tickets + PR-Kommentare (Jira/GitHub/Bitbucket MCP), LikeC4-Ist-Modell, betroffener Code | Kondensierter Kontext-Report, keine Rohdaten |
-| `research-agent` | 6.3 | Problembeschreibung des Blocks | Liste von Lösungsoptionen mit Quellen, ohne Suchrauschen |
-| `review-triage` | 11.1 | PR-Kommentare | Strukturierte Liste: Kommentar → Wiedereinstiegspunkt (1/2/7/8/neues Ticket) |
-| `ist-extractor` | 12.1 | Gemergter Code | Extrahierter Ist-Stand als `.c4`-Diff-Vorschlag gegen `main` |
+| `context-gatherer` | 1 | Ticket, related tickets and PR comments (through the tracker's MCP server), the LikeC4 as-is model, the affected code | One condensed context report, no raw material |
+| `research-agent` | 6.3 | The block's problem statement | Solution options with their sources, without the search noise |
+| `review-triage` | 11.1 | PR comments | A structured list: comment to re-entry point (1, 2, 7, 8 or a separate ticket) |
+| `as-is-extractor` | 12.1 | The merged code | The extracted as-is state as a `.c4` diff proposal against `main` |
 
 ---
 
 ## 3. Skills
 
-Wiederverwendbares Wissen und Konventionen, ohne eigenen Kontext.
+Reusable knowledge and conventions, without a context of their own.
 
-| Skill | Inhalt |
+| Skill | Content |
 |---|---|
-| `artifact-formats` | Aufbau von `knowledge.md`, ADR-Template, `state.json`-Schema |
-| `likec4-conventions` | Dateistruktur, Naming, Disziplinregeln: nicht die ganze Codebase auf Component-Ebene modellieren, `description` kurz halten (1 Satz Verantwortung), `link` statt Duplizierung von Signaturen, ein File pro Container |
-| `stub-conventions` | Was ein Stub je Sprache ist (Rust: Trait, PHP: Interface, Dart: Abstract Class, …) und dass der Vertrag – Fehlerverhalten, Idempotenz, Invarianten – in Doc-Comments gehört, nicht ins Diagramm |
-| `decision-heuristics` | Die "lohnt sich das"-Regeln an einem Ort: Themenblock-Schnitt (4), ADR-Trigger (7.3: nur bei mehreren echten Optionen), kleine Korrektur vs. echter Rücksprung (Signatur/Beziehung geändert?), 8.0-Trigger |
-| `consultation-protocol` | Wie eine Rücksprache formuliert, dargestellt und als Objekt in `state.json` abgelegt wird |
+| `artifact-formats` | The structure of `knowledge.md`, the ADR template, `state.json` |
+| `likec4-conventions` | File layout, naming, discipline rules: do not model the whole codebase at component level, keep `description` to one sentence of responsibility, `link` instead of duplicating signatures, one file per container |
+| `stub-conventions` | What a stub is per language (Rust: trait, PHP: interface, Dart: abstract class) and that the contract, meaning error behaviour, idempotency and invariants, belongs in doc comments rather than in the diagram |
+| `decision-heuristics` | The "is this worth it" rules in one place: where to cut theme blocks (4), when an ADR is worth writing (7.3: only where several real options stood), a small correction against a real jump (did a signature or relationship change?), the 8.0 trigger |
+| `consultation-protocol` | How a consultation is prepared, presented and recorded as an object in `state.json` |
 
 ---
 
 ## 4. Hooks
 
-Hooks sind die einzige Ebene, die tatsächlich **erzwingt** statt vorschlägt – und gleichzeitig die Event-Quelle für die spätere UI.
+Hooks are the only layer that actually **enforces** rather than suggests, and at the same time the event source for the UI.
 
-| Hook | Auslöser | Wirkung |
+| Hook | Trigger | Effect |
 |---|---|---|
-| `stub-lock` | Datei-Edit während Schritt 8/9 | Vergleicht gegen `stub_fingerprints` des aktiven Blocks. Signaturänderung → blockieren, Rücksprung 8→7 erzwingen. **Wichtigster Hook** – setzt die zentrale Regel des Workflows technisch durch |
-| `consultation-gate` | Übergang zum nächsten Hauptpunkt in Zone Intake/Blocks bis 7 | Blockiert, solange keine Freigabe der zugehörigen Rücksprache in `state.json` steht |
-| `ist-staleness` | Eintritt in Schritt 7 | Vergleicht `ist_base_commit` mit aktuellem `main` des Ticket-Repos. Bei Drift → Schritt 7.0 erzwingen |
-| `block-overlap` | Schreiben von `claimed_components` (7.1) | Überschneidung mit Claims eines anderen Blocks → Rücksprung 7→4 |
-| `sequential-implementation` | Eintritt in Schritt 8 | Blockiert, wenn bereits ein anderer Block in 8/9 aktiv ist |
-| `pr-gate` | PR-Erstellung (10) | Blockiert, solange nicht alle Blöcke `done` sind oder Links zu `knowledge.md`, ADR(s) und `.c4`-View fehlen |
-| `state-writer` | Nach jedem Schrittwechsel, jeder Rücksprache, jedem Rücksprung | Schreibt `state.json` fort; zugleich Event-Stream für die UI |
+| `stub_lock` | A file edit during step 8 or 9 | Compares against the fingerprints in the active block's `claimed_stubs`. A changed contract is blocked, which forces the jump from 8 to 7. **The hook that matters**, because it is what enforces the central rule of the workflow |
+| `consultation_gate` | Any write while a consultation is open | Blocks until the consultation in `state.json` has been answered |
+| `as_is_staleness` | Entering step 7 | Compares `as_is_base_commit` against the ticket repo's current `main`. On drift it forces step 7.0 |
+| `block_overlap` | Writing `claimed_components` (7.1) | An overlap with another block's claims means a jump from 7 to 4 |
+| `sequential_implementation` | Entering step 8 | Blocks while another block is already in 8 or 9 |
+| `pr_gate` | Opening the pull request (10) | Blocks while any block is not `done`, or while links to `knowledge.md`, the ADRs and the `.c4` view are missing |
+| `state_writer` | After every editor write, after every shell command and at the end of every turn | Compares `state.json` against its snapshot and appends the difference to `events.jsonl`: step changes, consultations, jumps, plus an `artifact_hint` naming the artefact the current step is about. It does not write `state.json` itself, it observes it |
+| `session_start` | The start of a session | Announces keel and the active ticket to Claude |
+
+Every hook fails open on its own problems. Missing configuration or unreadable state produces a warning and lets development continue, because a hook that halts work when it is itself misconfigured gets disabled within two days, and then it protects nothing.
 
 ---
 
-## 5. `state.json` (Schema-Skizze)
+## 5. `state.json` (sketch)
+
+`state.schema.json` in the repository root is the authoritative version.
 
 ```json
 {
   "ticket_id": "PROJ-1234",
-  "phase": "intake | blocks | delivery",
-  "ist_base_commit": "a1b2c3d",
+  "phase": "intake | blocks | delivery | done",
+  "intake_step": "5",
+  "as_is_base_commit": "a1b2c3d",
+  "to_be_branch": "ticket/PROJ-1234",
   "artifacts": {
     "knowledge": "tickets/PROJ-1234/knowledge.md",
     "adrs": ["tickets/PROJ-1234/adr/0001-....md"],
@@ -82,40 +88,46 @@ Hooks sind die einzige Ebene, die tatsächlich **erzwingt** statt vorschlägt �
       "id": "block-1",
       "title": "...",
       "step": "7.2",
-      "status": "in_progress | awaiting_consultation | done",
+      "status": "pending | in_progress | awaiting_consultation | blocked | done",
       "claimed_components": ["api.orderService"],
-      "claimed_stubs": ["src/order/service.rs::OrderService"],
-      "stub_fingerprints": {},
+      "claimed_stubs": [
+        { "path": "src/order/service.rs", "symbol": "OrderService", "fingerprint": "..." }
+      ],
       "adrs": []
     }
   ],
   "consultations": [
     {
-      "id": "c-001",
+      "id": "c1",
       "block": "block-1",
       "step": "7",
       "question": "...",
       "options": [],
       "answer": "...",
-      "timestamp": "..."
+      "status": "open | answered | skipped",
+      "asked_at": "...",
+      "answered_at": "..."
     }
   ],
   "jump_log": [
-    { "from": "8", "to": "7", "block": "block-1", "reason": "...", "timestamp": "..." }
+    { "from": "8", "to": "7", "block": "block-1", "trigger": "contract_change", "reason": "...", "at": "..." }
   ]
 }
 ```
 
-Rücksprachen sind bewusst **Objekte mit ID**, kein Terminal-Text: nur so kann die spätere UI sie als Karte rendern, und es entsteht nebenbei das Audit-Log der Entscheidungen.
+Consultations are deliberately **objects with an id** rather than terminal text: only that way can a UI render them as cards, and the audit log of decisions comes out of it for free.
 
 ---
 
-## 6. Blick auf die spätere UI
+## 6. Toward the UI
 
-Die UI wird damit reine Darstellung über vorhandenen Daten, ohne Chatverlauf interpretieren zu müssen:
+This makes the UI pure presentation over data that already exists, with no chat history to interpret:
 
-- `state.json` als Backend / Fortschrittsanzeige
-- Hook-Events als Live-Stream
-- `consultations[]` als interaktive Karten (Frage + Optionen + Antwort)
-- `c4_views` als Diagramm-Ansicht
-- `jump_log` als Historie, warum sich etwas geändert hat
+- `state.json` as the backend and the progress display
+- `events.jsonl` as the live stream and the history
+- `consultations[]` as interactive cards (question, options, answer)
+- `c4_views` as the diagram pane
+- `jump_log` as the history of why something changed
+- `artifact_hint` as a one-shot signal of which artefact belongs in front right now.
+  It is not state: nothing waits for it, a terminal with no UI attached is the
+  normal case, and the developer's own navigation overrides it at any time

@@ -1,147 +1,147 @@
-# Entwicklungs-Workflow
+# Development workflow
 
-## Grundprinzipien
+## Principles
 
-- **Sprachunabhängig.** Alles, was "Stub" heißt, meint je nach Zielsprache Trait (Rust), Interface (PHP), Abstract Class (Dart) etc. Der Workflow definiert *was* passieren muss, nicht *wie*.
-- **Rücksprache** wird nach jedem Hauptpunkt (nicht Unterpunkten) gehalten – außer explizit als "keine Rücksprache" markiert. Rücksprache = manueller Check durch den Entwickler, dass alles korrekt verstanden/definiert wurde.
-- **Ab Schritt 8 (Implementierung) keine planmäßige Rücksprache mehr** – außer durch einen Rücksprung ausgelöst (siehe unten).
-- **Artefakte liegen ausschließlich im Ticket-Repo, nie im Code-Repo.** Verknüpfung erfolgt nur über Links (Ticket ↔ Ticket-Repo ↔ Code-Repo-PR).
-- **Ein Ticket-Repo pro Projekt** (FrachtPilot, Anagraph, Kimai-App, …).
-- **Parallelität:** Themenblöcke laufen **parallel bis einschließlich Schritt 7**, ab Schritt 8 **sequenziell** (ein Block nach dem anderen). Grund: ab 8 gibt es keine Rücksprachen mehr, also keinen Wartegrund – und gleichzeitiges Schreiben mehrerer Blöcke in dasselbe Repo/denselben Branch erzeugt nur Konflikte.
-- **Sprache:** Dieses Dokument ist der deutschsprachige Arbeitsstand. Alle tatsächlichen Artefakte (Agents, Hooks, Skills, `state.json`, `.c4`, `knowledge.md`, ADRs) werden in **Englisch** geschrieben; Bezeichner und Feldnamen sind hier bereits englisch.
+- **Language-independent.** Whatever is called a "stub" means a trait in Rust, an interface in PHP, an abstract class in Dart, and so on. The workflow defines *what* has to happen, not *how*.
+- **A consultation** is held after every main step, not after sub-steps, unless the step is explicitly marked as having none. A consultation is the developer's own check that everything was understood and defined correctly.
+- **From step 8 (implementation) onward there is no scheduled consultation**, unless a jump back triggers one (see below).
+- **Artifacts live in the ticket repo only, never in the code repo.** The two are connected by links (ticket, ticket repo, code repo pull request).
+- **One ticket repo per project.**
+- **Parallelism:** theme blocks run in parallel up to and including step 7, and strictly one at a time from step 8 on. The reason: from 8 there are no consultations left, so there is nothing to wait for, and several blocks writing to the same repository and branch at once produces nothing but conflicts.
 
-## Zonen
+## Zones
 
-| Zone | Schritte | Scope |
+| Zone | Steps | Scope |
 |---|---|---|
-| Intake | 1–5 | Einmal pro Ticket, strikt sequenziell |
-| Blocks | 6–9 | Pro Themenblock; 6–7 parallel möglich, 8–9 sequenziell |
-| Delivery | 10–12 | Einmal pro Ticket, erst wenn alle Blöcke abgeschlossen sind |
+| Intake | 1 to 5 | Once per ticket, strictly sequential |
+| Blocks | 6 to 9 | Per theme block; 6 and 7 may run in parallel, 8 and 9 are sequential |
+| Delivery | 10 to 12 | Once per ticket, only when every block is done |
 
 ---
 
-## 1. Kontext sammeln
+## 1. Gather context
 
-### 1.1. Ticket mit Kommentaren lesen
-#### 1.1.1. (wenn vorhanden) Verwandte Tickets lesen (Epics, Meilensteine, etc.)
-### 1.2. (wenn vorhanden) Pull Request mit Review-Kommentaren lesen
-### 1.3. (wenn vorhanden) zusammenhängende Komponenten aus dem LikeC4-Modell (Ist-Zustand) lesen
-### 1.4. (wenn vorhanden) betroffenen Code lesen
+### 1.1. Read the ticket and its comments
+#### 1.1.1. Read related tickets where they exist (epics, milestones)
+### 1.2. Read the pull request and its review comments, where one exists
+### 1.3. Read the connected components of the LikeC4 as-is model, where one exists
+### 1.4. Read the affected code, where it exists
 
-## 2. Das Gelesene verstehen
+## 2. Understand what was read
 
-### 2.1. Fachliche Ziele definieren
-Was soll am Ende funktionieren, neu oder besser sein für die Person oder das System, welche(s) mit der Anwendung interagiert?
-### 2.2. Probleme definieren
+### 2.1. Define the functional goals
+What must work, be new or be better at the end, for the person or the system interacting with the application?
+### 2.2. Define the problems
 
-## 3. Fachliche Fragen stellen
-*(keine Rücksprache nötig – Fragen werden direkt beantwortet, keine gesonderte Übersicht danach nötig)*
+## 3. Ask functional questions
+*(no consultation: the questions are answered directly, and no separate summary is needed afterwards)*
 
-## 4. Ticket in unabhängig planbare Themenblöcke gliedern
+## 4. Split the ticket into independently plannable theme blocks
 
-## 5. Wissen speichern
-Bisher erarbeitetes Wissen in `knowledge.md` (Ticket-Repo) schreiben, inkl. Status (z. B. für Ziele, Probleme, offen gebliebene Fragen). Wird bei jedem Rücksprung (siehe unten) um einen Log-Eintrag ergänzt: *"PR-Feedback / Erkenntnis vom [Datum]: X führte zu Rücksprung auf Schritt Y."*
+## 5. Persist knowledge
+Write what has been worked out so far to `knowledge.md` in the ticket repo, each item with a status (goals, problems, questions left open). Every jump back (see below) adds a log entry: *"PR feedback / finding of [date]: X led to a jump back to step Y."*
 
 ---
-**Ab hier: pro Themenblock** (6–7 parallel über Blöcke hinweg möglich, 8–9 sequenziell)
+**From here on: per theme block** (6 and 7 may run in parallel across blocks, 8 and 9 are sequential)
 ---
 
-## 6. Lösungsvorschläge sammeln
+## 6. Collect solution options
 
-### 6.1. Im gesammelten Kontext nach vorhandenen Lösungsvorschlägen schauen
-### 6.2. Entwickler nach möglichen Lösungsansätzen fragen
-### 6.3. Selbst überlegen und recherchieren
+### 6.1. Look for options already proposed in the gathered context
+### 6.2. Ask the developer for possible approaches
+### 6.3. Think it through and research it
 
-## 7. Architektur & Design festlegen
+## 7. Fix architecture and design
 
-### 7.0. Ist-Abgleich, falls Themenblock/Ticket schon länger läuft oder ein bestehender Soll-Branch weiterverwendet wird
-Prüfen, ob sich der Ist-Zustand (main im Ticket-Repo) seit Beginn geändert hat (z. B. weil jemand anderes zwischenzeitlich etwas an denselben Komponenten gebaut hat). Bei Abweichung: Soll-Branch rebasen/anpassen, **Rücksprache**.
-### 7.1. Betroffenes LikeC4-Modell im Soll-Branch (Ticket-Branch im Ticket-Repo) aktualisieren (Komponenten, Beziehungen)
-Dabei werden die betroffenen Komponenten als `claimed_components` des Blocks deklariert. Überlappen sich die Claims zweier Blöcke, waren die Blöcke nicht unabhängig → Rücksprung 7→4.
-### 7.2. Leere Stubs im Code anlegen (Signaturen – ohne Implementierung)
-### 7.3. ADR schreiben, falls eine nicht-triviale Entscheidung zwischen mehreren echten Optionen aus Schritt 6 getroffen wurde (Kontext, verworfene Optionen, Begründung, Trade-offs)
+### 7.0. Compare against the as-is model, if the block or ticket has been open a while or reuses an existing to-be branch
+Check whether the as-is state (`main` in the ticket repo) has changed since the block started, because somebody else built on the same components in the meantime. On drift: rebase the to-be branch and **consult**.
+### 7.1. Update the affected LikeC4 model on the to-be branch (the ticket branch in the ticket repo): components and relationships
+The affected components are declared as the block's `claimed_components`. Where two blocks' claims overlap, the blocks were never independent, so jump 7 to 4.
+### 7.2. Create empty stubs in the code: signatures, no implementation
+### 7.3. Write an ADR if a non-trivial decision was made between several real options from step 6 (context, rejected options, reasoning, trade-offs)
 
-→ **Rücksprache hier besonders kritisch**, da danach strikt gegen Stubs und LikeC4-Modell implementiert wird.
+-> **The consultation here is the critical one**, because everything after it is implemented strictly against these stubs and this model.
 
-## 8. Implementierung
+## 8. Implementation
 
-### 8.0. Implementierungsplan erstellen, falls nicht-trivial
-Nur bei mehreren sinnvollen algorithmischen Ansätzen, komplexen Fehlerpfaden oder performance-kritischen Stellen. Betrifft ausschließlich das *Innere* der Methoden (Umsetzung), nicht den Vertrag (Signatur/Verhalten nach außen) – der steht bereits aus 7.2 fest. Kein eigenes Artefakt, dient nur der Selbstklärung.
+### 8.0. Plan the implementation first, if it is non-trivial
+Only where there are several sensible algorithmic approaches, complex error paths or performance-critical sections. This covers the *inside* of the methods, never the contract (signature and outward behaviour), which is already fixed by 7.2. It is not an artifact of its own and serves only to get clear.
 
-→ Stellt sich dabei heraus, dass sich doch der Vertrag ändern muss (z. B. anderer Rückgabetyp nötig) → kein 8.0-Fall mehr, sondern regulärer Rücksprung 8→7 mit dortiger Rücksprache-Pflicht.
+-> If it turns out that the contract has to change after all (a different return type, for instance), it is no longer an 8.0 case but a regular jump from 8 to 7, with 7's consultation.
 
-Strikt gegen die in 7.2 definierten Stubs und das in 7.1 definierte Modell – keine Abweichung ohne Rücksprung zu 7.
+Implement strictly against the stubs defined in 7.2 and the model defined in 7.1. No deviation without a jump back to 7.
 
-*(keine planmäßige Rücksprache)*
+*(no scheduled consultation)*
 
-## 9. Verifikation
-Tests, Abgleich Implementierung ↔ Stubs/LikeC4-Modell.
+## 9. Verification
+Tests, and a comparison of the implementation against the stubs and the LikeC4 model.
 
-*(keine planmäßige Rücksprache)*
+*(no scheduled consultation)*
 
-## 10. Pull Request erstellen
-PR-Beschreibung enthält Links zu `knowledge.md`, ADR(s) und dem betroffenen `.c4`-View im Ticket-Repo.
+## 10. Open the pull request
+The description links `knowledge.md`, the ADRs and the affected `.c4` view in the ticket repo.
 
-*(keine planmäßige Rücksprache)*
+*(no scheduled consultation)*
 
-## 11. PR-Feedback verarbeiten
-### 11.1. Kommentare einzeln lesen und einordnen:
-| Art des Kommentars | Wiedereinstieg bei |
+## 11. Process pull request feedback
+### 11.1. Read each comment and classify it:
+| Kind of comment | Re-enter at |
 |---|---|
-| Reiner Implementierungs-Bug/Nit | 8 |
-| Stub/Signatur oder LikeC4-Modell muss sich ändern | 7 (Rücksprache) |
-| Fachliches Ziel/Problem war falsch verstanden | 2 (Rücksprache) |
-| Fehlender Kontext, der in 1 übersehen wurde | 1 |
-| Komplett neuer Scope, nicht Teil des ursprünglichen Tickets | kein Wiedereinstieg – Rücksprache: neues Ticket vorschlagen |
+| Implementation bug or nit | 8 |
+| A stub signature or the LikeC4 model must change | 7 (consult) |
+| A functional goal or problem was misunderstood | 2 (consult) |
+| Context that was missed in step 1 | 1 |
+| Entirely new scope, not part of the original ticket | no re-entry: consult and propose a separate ticket |
 
-### 11.2. Ab dem ermittelten Punkt normal weiterlaufen (inkl. dortiger Rücksprache-Regeln)
-### 11.3. Wieder vorwärts bis 10 – dort jetzt "bestehenden PR aktualisieren" statt "neuen PR erstellen"
+### 11.2. Carry on normally from the point determined, including that point's consultation rules
+### 11.3. Run forward to 10 again, where 10 now means updating the existing pull request rather than opening a new one
 
-## 12. Ist-Modell nach Merge synchronisieren
-Ausgelöst manuell, z. B. per `/sync-architecture <ticket-id>`. **Kein automatischer Merge** – es gibt immer einen manuellen Check, da parallele Branches, die dieselben Komponenten anfassen, sich sonst überschreiben könnten, und weil sich der Ist-Zustand während der Laufzeit des Tickets bereits geändert haben kann.
+## 12. Sync the as-is model after the merge
+Triggered by hand, with `/keel:sync-architecture <ticket-id>`. **Never merged automatically.** There is always a manual check, because parallel branches touching the same components would otherwise overwrite each other, and because the as-is state may have moved while the ticket was running.
 
-### 12.1. Graphify/Codegraph auf den frisch gemergten Code anwenden → automatischer Ist-Extract
-### 12.2. Abgleich: Soll-Branch (aus 7.1) vs. extrahiertes Ist
-### 12.3. Bei Übereinstimmung: Entwickler bestätigt manuell → Soll-Branch-Inhalt wird neuer Ist-Stand (main)
-### 12.4. Bei Abweichung: main nach dem extrahierten Ist korrigieren – **Rücksprache**, da Abweichung auf einen nicht dokumentierten Rücksprung während 8/9 hindeuten kann
-
----
-
-## Rücksprung-Regeln
-
-**Grundregel:** Ein Rücksprung zu einem Punkt reaktiviert dessen ursprüngliche Rücksprache-Pflicht – unabhängig davon, aus welcher Phase heraus zurückgesprungen wird.
-
-**Abgrenzung kleine Korrektur vs. echter Rücksprung:** Ändert sich eine Signatur (Parameter, Rückgabetyp, welche Methoden es gibt) oder eine Beziehung im LikeC4-Modell? → echter Rücksprung. Ändert sich nur Naming oder ein interner Kommentar? → keine.
-
-| Von | Zu | Auslöser |
-|---|---|---|
-| 6/7 | 2 | Fachliches Ziel/Problem war falsch verstanden oder unvollständig |
-| 7 | 4 | Themenblock ist doch nicht unabhängig, muss neu geschnitten werden (u. a. automatisch erkannt bei Überlappung von `claimed_components` zweier Blöcke) |
-| 8 | 7 | Stub/Signatur oder LikeC4-Modell ist falsch/unvollständig |
-| 9 | 8 | Normaler Implementierungs-Bug |
-| 9 | 7 | Design-Fehler, kein reiner Implementierungs-Bug |
-| (PR) | 1/2/7/8 | Siehe Tabelle unter Schritt 11 |
-
-Jeder Rücksprung wird in `knowledge.md` protokolliert (siehe Schritt 5).
+### 12.1. Run the code graph tool over the freshly merged code for an automatic as-is extract
+### 12.2. Compare the to-be branch from 7.1 against the extracted as-is
+### 12.3. Where they agree: the developer confirms by hand, and the to-be branch becomes the new as-is state on `main`
+### 12.4. Where they differ: correct `main` to the extracted as-is and **consult**, because a difference can point at an undocumented jump back during 8 or 9
 
 ---
 
-## Artefakte
+## Rules for jumping back
 
-Alle Artefakte liegen im **Ticket-Repo** (nie im Code-Repo), Verknüpfung nur über Links:
+**The rule:** a jump back to a step reactivates that step's own consultation rule, regardless of which phase the jump came from.
 
-| Artefakt | Ort | Lebensdauer |
+**A small correction against a real jump:** does a signature change (parameters, return type, which methods exist) or a relationship in the LikeC4 model? Then it is a real jump. Does only a name or an internal comment change? Then it is not.
+
+| From | To | Trigger |
 |---|---|---|
-| `.c4`/`.likec4`-Modell | `architecture/` im Ticket-Repo. `main` = Ist-Zustand, Ticket-Branch = Soll-Zustand | Fortlaufend, projektweit |
-| `knowledge.md` | `tickets/<ticket-id>/knowledge.md` | Pro Ticket |
-| `state.json` | `tickets/<ticket-id>/state.json` | Pro Ticket – maschinenlesbarer Zustand (Schritt/Status je Block, Rücksprachen, Rücksprünge, Claims, Stub-Fingerprints, `ist_base_commit`). Grundlage für Wiedereinstieg und spätere UI |
-| ADR | `tickets/<ticket-id>/adr/000X-titel.md` | Pro Ticket, dauerhaft als Entscheidungshistorie |
-| Code (Stubs, Implementierung, Tests) | Code-Repo | Pro Ticket → dauerhaft im Code |
+| 6 or 7 | 2 | A functional goal or problem was misunderstood or incomplete |
+| 7 | 4 | The theme block is not independent after all and has to be cut again (detected automatically where two blocks' `claimed_components` overlap) |
+| 8 | 7 | A stub signature or the LikeC4 model is wrong or incomplete |
+| 9 | 8 | An ordinary implementation bug |
+| 9 | 7 | A design flaw rather than an implementation bug |
+| (PR) | 1, 2, 7 or 8 | See the table under step 11 |
 
-## Repo-Struktur (Ticket-Repo, pro Projekt)
+Every jump back is recorded in `knowledge.md` (see step 5).
+
+---
+
+## Artifacts
+
+Every artifact lives in the **ticket repo**, never in the code repo, and is connected by links only:
+
+| Artifact | Location | Lifetime |
+|---|---|---|
+| The `.c4` model | `architecture/` in the ticket repo. `main` is the as-is state, the ticket branch the to-be state | Ongoing, project-wide |
+| `knowledge.md` | `tickets/<ticket-id>/knowledge.md` | Per ticket |
+| `state.json` | `tickets/<ticket-id>/state.json` | Per ticket. Machine-readable state: step and status per block, consultations, jumps, claims, stub fingerprints, `as_is_base_commit`. The basis for resuming and for the UI |
+| `events.jsonl` | `tickets/<ticket-id>/events.jsonl` | Per ticket. Append-only stream of what changed, derived from `state.json` by the `state_writer` hook |
+| ADR | `tickets/<ticket-id>/adr/000X-title.md` | Per ticket, kept permanently as the decision history |
+| Code (stubs, implementation, tests) | Code repo | Per ticket, then permanent in the code |
+
+## Repository structure (ticket repo, one per project)
 
 ```
-ticket-repo-<projekt>/
+ticket-repo-<project>/
   architecture/
     specification.c4
     context.c4
@@ -151,6 +151,7 @@ ticket-repo-<projekt>/
     <ticket-id>/
       knowledge.md
       state.json
+      events.jsonl
       adr/
         0001-title.md
 ```
